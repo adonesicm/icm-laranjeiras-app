@@ -63,7 +63,7 @@ def check_password():
         return False
     elif not st.session_state["password_correct"]:
         st.text_input("Digite a senha", type="password", on_change=password_entered, key="password")
-        st.error("😕 Senha incorreta")
+        st.error("Senha incorreta")
         return False
     else:
         return True
@@ -88,7 +88,7 @@ if 'avisos' not in st.session_state:
 if 'dons' not in st.session_state:
     st.session_state.dons = ""
 
-aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs(["📅 Escala", "📊 Frequência", "📢 Avisos", "🎁 Dons", "🎂 Aniversários", "📜 Histórico"])
+aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs(["Escala", "Frequencia", "Avisos", "Dons", "Aniversarios", "Historico"])
 
 # ABA 1: ESCALA
 with aba1:
@@ -110,7 +110,7 @@ with aba1:
 
 # ABA 2: FREQUENCIA + FOLHETO
 with aba2:
-    st.header("Lançar Frequência do Culto")
+    st.header("Lançar Frequencia do Culto")
     with st.form("form_frequencia"):
         data_f = st.date_input("Data do Culto", value=date.today(), key="data_f", format="DD/MM/YYYY")
         col1, col2, col3 = st.columns(3)
@@ -119,14 +119,14 @@ with aba2:
         with col3: criancas = st.number_input("Crianças", min_value=0, step=1)
         total = membros + visitantes + criancas
         st.metric("Total de Pessoas", total)
-        enviado_f = st.form_submit_button("Salvar Frequência")
+        enviado_f = st.form_submit_button("Salvar Frequencia")
         if enviado_f:
             nova_f = pd.DataFrame([{'Data do Culto': data_f, 'Membros (Adultos)': membros, 'Visitantes (Adultos)': visitantes, 'Crianças': criancas, 'Total': total}])
             st.session_state.frequencia_df = pd.concat([st.session_state.frequencia_df, nova_f], ignore_index=True)
-            st.success("Frequência salva!")
+            st.success("Frequencia salva!")
 
     st.divider()
-    st.subheader("📜 Gerar e Compartilhar Folheto do Culto")
+    st.subheader("Gerar e Compartilhar Folheto do Culto")
     data_folheto = st.date_input("Selecione a data do culto", value=date.today(), key="data_folheto", format="DD/MM/YYYY")
 
     if st.button("Gerar Folheto para WhatsApp"):
@@ -143,33 +143,33 @@ with aba2:
 
         if not esc_dia.empty:
             e = esc_dia.iloc[0]
-            folheto += f"*PROGRAMAÇÃO:*\n"
-            folheto += f" Palavra: {e['Irmão da Palavra']}\n"
-            folheto += f" Louvor: {e['Irmão do Louvor']}\n"
-            folheto += f" Portão: {e['Irmão do Portão']}\n"
-            folheto += f" Texto Base: {e['Texto Lido']}\n\n"
+            folheto += f"*PROGRAMACAO:*\n"
+            folheto += f"Palavra: {e['Irmão da Palavra']}\n"
+            folheto += f"Louvor: {e['Irmão do Louvor']}\n"
+            folheto += f"Portão: {e['Irmão do Portão']}\n"
+            folheto += f"Texto Base: {e['Texto Lido']}\n\n"
         else:
-            folheto += f"*PROGRAMAÇÃO:*\nAguardando definição da escala\n"
+            folheto += f"*PROGRAMACAO:*\nAguardando definição da escala\n"
 
-        folheto += f"*VERSÍCULO DO DIA:*\n{versiculo}\n\n"
+        folheto += f"*VERSICULO DO DIA:*\n{versiculo}\n\n"
 
         if st.session_state.dons.strip()!= "":
             folheto += f"*DONS ESPIRITUAIS:*\n{st.session_state.dons}\n\n"
 
         if not aniv_mes.empty:
-            folheto += f"*🎂 ANIVERSARIANTES DE {calendar.month_name[mes_atual].upper()}*\n"
+            folheto += f"*ANIVERSARIANTES DE {calendar.month_name[mes_atual].upper()}*\n"
             for _, row in aniv_mes.iterrows():
                 dia = pd.to_datetime(row['Data Aniversário']).strftime('%d/%m')
                 folheto += f"• {row['Nome']} - {dia}\n"
             folheto += "\n"
 
         if st.session_state.avisos.strip()!= "":
-            folheto += f"*AVISOS E REUNIÕES:*\n{st.session_state.avisos}\n\n"
+            folheto += f"*AVISOS E REUNIOES:*\n{st.session_state.avisos}\n\n"
 
-        folheto += f"_Que Deus te abençoe_"
+        folheto += f"“E haverá um tabernáculo para sombra contra o calor do dia; e para refúgio e esconderijo contra a tempestade e a chuva”"
 
         url_whatsapp = f"https://wa.me/?text={urllib.parse.quote(folheto)}"
-        st.link_button("📤 Enviar Folheto no WhatsApp", url_whatsapp)
+        st.link_button("Enviar Folheto no WhatsApp", url_whatsapp)
         st.code(folheto, language="text")
 
 # ABA 3: AVISOS
@@ -202,7 +202,7 @@ with aba5:
 
 # ABA 6: HISTORICO
 with aba6:
-    st.header("Histórico")
+    st.header("Historico")
     if not st.session_state.frequencia_df.empty:
         st.session_state.frequencia_df['Data do Culto'] = pd.to_datetime(st.session_state.frequencia_df['Data do Culto'])
         data_min = st.session_state.frequencia_df['Data do Culto'].min().date()
@@ -215,7 +215,7 @@ with aba6:
         df_filtrado['Data do Culto'] = df_filtrado['Data do Culto'].dt.strftime('%d/%m/%Y')
         st.dataframe(df_filtrado, use_container_width=True)
     else:
-        st.info("Nenhuma frequência lançada ainda.")
+        st.info("Nenhuma frequencia lançada ainda.")
     st.subheader("Escalas Cadastradas")
     if not st.session_state.escala_df.empty:
         df_escala = st.session_state.escala_df.copy()
