@@ -131,6 +131,7 @@ with aba2:
 
     if st.button("Gerar Folheto para WhatsApp"):
         esc_dia = st.session_state.escala_df[st.session_state.escala_df['Data do Culto'] == data_folheto]
+        freq_dia = st.session_state.frequencia_df[st.session_state.frequencia_df['Data do Culto'] == data_folheto] # NOVA LINHA
         mes_atual = data_folheto.month
         aniv_mes = st.session_state.aniversariantes_df[pd.to_datetime(st.session_state.aniversariantes_df['Data Aniversário']).dt.month == mes_atual]
 
@@ -150,6 +151,15 @@ with aba2:
             folheto += f"Texto Base: {e['Texto Lido']}\n\n"
         else:
             folheto += f"*PROGRAMACAO:*\nAguardando definição da escala\n"
+
+        # ESTATISTICA DA FREQUENCIA NO PANFLETO
+        if not freq_dia.empty:
+            f = freq_dia.iloc[0]
+            folheto += f"*ESTATISTICA:*\n"
+            folheto += f"Membros: {int(f['Membros (Adultos)'])}\n"
+            folheto += f"Visitantes: {int(f['Visitantes (Adultos)'])}\n"
+            folheto += f"Crianças: {int(f['Crianças'])}\n"
+            folheto += f"Total: {int(f['Total'])}\n\n"
 
         folheto += f"*VERSICULO DO DIA:*\n{versiculo}\n\n"
 
