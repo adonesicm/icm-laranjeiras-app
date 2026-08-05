@@ -30,7 +30,7 @@ if not check_password():
     st.stop()
 
 # 2. BANCO DE DADOS
-st.title("ICM Laranjeiras - Escala e Frequência")
+st.title("ICM Laranjeiras - Controle")
 if 'escala_df' not in st.session_state:
     st.session_state.escala_df = pd.DataFrame(columns=[
         'Data do Culto', 'Irmão da Palavra', 'Irmão do Louvor', 'Texto Lido', 'Irmão do Portão'
@@ -41,8 +41,10 @@ if 'frequencia_df' not in st.session_state:
     ])
 if 'aniversariantes_df' not in st.session_state:
     st.session_state.aniversariantes_df = pd.DataFrame(columns=['Nome', 'Data Aniversário'])
+if 'avisos' not in st.session_state:
+    st.session_state.avisos = "1. Ensaio do Louvor: Sábado 19h\n2. Reunião de Líderes: Domingo 8h\n3. Você é muito bem-vindo! 🙌"
 
-aba1, aba2, aba3, aba4, aba5 = st.tabs(["📅 Escala", "📊 Frequência", "🎂 Aniversários", "📜 Histórico", "📈 Gráficos"])
+aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs(["📅 Escala", "📊 Frequência", "📢 Avisos", "🎂 Aniversários", "📜 Histórico", "📈 Gráficos"])
 
 # ABA 1: ESCALA
 with aba1:
@@ -62,7 +64,7 @@ with aba1:
             st.session_state.escala_df = pd.concat([st.session_state.escala_df, nova], ignore_index=True)
             st.success("Escala salva!")
 
-# ABA 2: FREQUENCIA + FOLHETO WHATSAPP
+# ABA 2: FREQUENCIA + FOLHETO
 with aba2:
     st.header("Lançar Frequência do Culto")
     with st.form("form_frequencia"):
@@ -85,12 +87,14 @@ with aba2:
 
     if st.button("Gerar Folheto para WhatsApp"):
         esc_dia = st.session_state.escala_df[st.session_state.escala_df['Data do Culto'] == data_folheto]
-        freq_dia = st.session_state.frequencia_df[st.session_state.frequencia_df['Data do Culto'] == data_folheto]
         mes_atual = data_folheto.month
         aniv_mes = st.session_state.aniversariantes_df[pd.to_datetime(st.session_state.aniversariantes_df['Data Aniversário']).dt.month == mes_atual]
 
-        # GERA O FOLHETO
-        folheto = f"*⛪ FOLHETO ICM LARANJEIRAS*\n"
+        versiculo = "Aguardando definição"
+        if not esc_dia.empty:
+            versiculo = esc_dia.iloc[0]['Texto Lido']
+
+        folheto = f"*FOLHETO ICM LARANJEIRAS*\n"
         folheto += f"*Culto do dia: {data_folheto.strftime('%d/%m/%Y')}*\n\n"
 
         if not esc_dia.empty:
@@ -101,9 +105,9 @@ with aba2:
             folheto += f"🚪 Portão: {e['Irmão do Portão']}\n"
             folheto += f"📜 Texto Base: {e['Texto Lido']}\n\n"
         else:
-            folheto += f"*PROGRAMAÇÃO:*\nAguardando definição da escala\n"
+            folheto += f"*PROGRAMAÇÃO:*\nAguardando definição da escala\n\n"
 
-        folheto += f"*VERSÍCULO DO DIA:*\n\"Porque Deus amou o mundo de tal maneira...\" - João 3:16\n"
+        folheto += f"*VERSÍCULO DO DIA:*\n{versiculo}\n\n"
 
         if not aniv_mes.empty:
             folheto += f"*🎂 ANIVERSARIANTES DE {calendar.month_name[mes_atual].upper()}*\n"
@@ -112,17 +116,21 @@ with aba2:
                 folheto += f"• {row['Nome']} - {dia}\n"
             folheto += "\n"
 
-        folheto += f"*AVISOS:*\n1. Ensaio do Louvor: Sábado 19h\n"
-        folheto += f"2. Reunião de Líderes: Domingo 8h\n"
-        folheto += f"3. Você é muito bem-vindo! 🙌\n\n"
+        folheto += f"*AVISOS E REUNIÕES:*\n{st.session_state.avisos}\n\n"
         folheto += f"_Que Deus te abençoe_"
 
         url_whatsapp = f"https://wa.me/?text={urllib.parse.quote(folheto)}"
         st.link_button("📤 Enviar Folheto no WhatsApp", url_whatsapp)
         st.code(folheto, language="text")
 
-# ABA 3: ANIVERSARIANTES
+# ABA 3: AVISOS
 with aba3:
+    st.header("Editar Avisos e Reuniões")
+    st.text_area("Digite os avisos que vão no folheto", key="avisos", height=200)
+    st.success("Os avisos foram salvos automaticamente!")
+
+# ABA 4: ANIVERSARIANTES
+with aba4:
     st.header("Cadastrar Aniversariantes")
     with st.form("form_aniv"):
         nome = st.text_input("Nome")
@@ -134,8 +142,8 @@ with aba3:
             st.success("Aniversariante salvo!")
     st.dataframe(st.session_state.aniversariantes_df, use_container_width=True)
 
-# ABA 4: HISTORICO
-with aba4:
+# ABA 5: HISTORICO
+with aba5:
     st.header("Histórico")
     if not st.session_state.frequencia_df.empty:
         st.session_state.frequencia_df['Data do Culto'] = pd.to_datetime(st.session_state.frequencia_df['Data do Culto'])
@@ -152,8 +160,8 @@ with aba4:
     st.subheader("Escalas Cadastradas")
     st.dataframe(st.session_state.escala_df, use_container_width=True)
 
-# ABA 5: GRAFICOS
-with aba5:
+# ABA 6: GRAFICOS
+with aba6:
     st.header("📈 Gráficos de Crescimento")
     if not st.session_state.frequencia_df.empty:
         df = st.session_state.frequencia_df.copy()
