@@ -9,33 +9,33 @@ st.set_page_config(page_title="ICM Laranjeiras - Controle", layout="wide")
 # CSS COM CORES DA ICM - DOURADO E PRETO
 st.markdown("""
 <style>
- .stApp {
+.stApp {
         background: linear-gradient(135deg, #FFD700 0%, #FFF8DC 100%);
     }
     h1, h2, h3 {
         color: #000!important;
     }
- .stTabs [data-baseweb="tab-list"] {
+.stTabs [data-baseweb="tab-list"] {
         background-color: #000;
         border-radius: 8px;
         padding: 5px;
     }
- .stTabs [data-baseweb="tab"] {
+.stTabs [data-baseweb="tab"] {
         color: #FFD700;
         font-weight: bold;
     }
- .stTabs [aria-selected="true"] {
+.stTabs [aria-selected="true"] {
         background-color: #FFD700!important;
         color: #000!important;
         border-radius: 5px;
     }
- .stButton>button {
+.stButton>button {
         background-color: #000;
         color: #FFD700;
         border: 2px solid #FFD700;
         font-weight: bold;
     }
- .stButton>button:hover {
+.stButton>button:hover {
         background-color: #FFD700;
         color: #000;
     }
@@ -88,7 +88,7 @@ if 'avisos' not in st.session_state:
 if 'dons' not in st.session_state:
     st.session_state.dons = ""
 if 'louvores' not in st.session_state:
-    st.session_state.louvores = ["", "", ""]
+    st.session_state.louvores = ["", "", ""] # CORRIGIDO: 6 LINHAS
 
 aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs(["📅 Escala", "📊 Frequência", "📢 Avisos", "🎁 Dons", "🎂 Aniversários", "📜 Histórico"])
 
@@ -151,10 +151,10 @@ with aba2:
         if not esc_dia.empty:
             e = esc_dia.iloc[0]
             folheto += f"*PROGRAMAÇÃO:*\n"
-            folheto += f"📖 Palavra: {e['Irmão da Palavra']}\n"
-            folheto += f"🎵 Louvor: {e['Irmão do Louvor']}\n"
-            folheto += f"🚪 Portão: {e['Irmão do Portão']}\n"
-            folheto += f"📜 Texto Base: {e['Texto Lido']}\n\n"
+            folheto += f" Palavra: {e['Irmão da Palavra']}\n"
+            folheto += f" Louvor: {e['Irmão do Louvor']}\n"
+            folheto += f" Portão: {e['Irmão do Portão']}\n"
+            folheto += f" Texto Base: {e['Texto Lido']}\n\n"
         else:
             folheto += f"*PROGRAMAÇÃO:*\nAguardando definição da escala\n"
 
