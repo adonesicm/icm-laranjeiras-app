@@ -87,8 +87,6 @@ if 'avisos' not in st.session_state:
     st.session_state.avisos = ""
 if 'dons' not in st.session_state:
     st.session_state.dons = ""
-if 'louvores' not in st.session_state:
-    st.session_state.louvores = ["", "", ""] # CORRIGIDO: 6 LINHAS
 
 aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs(["📅 Escala", "📊 Frequência", "📢 Avisos", "🎁 Dons", "🎂 Aniversários", "📜 Histórico"])
 
@@ -128,11 +126,6 @@ with aba2:
             st.success("Frequência salva!")
 
     st.divider()
-    st.subheader("🎵 Louvores do Culto")
-    for i in range(6):
-        st.session_state.louvores[i] = st.text_input(f"Louvor {i+1}", value=st.session_state.louvores[i], key=f"louvor_{i}")
-
-    st.divider()
     st.subheader("📜 Gerar e Compartilhar Folheto do Culto")
     data_folheto = st.date_input("Selecione a data do culto", value=date.today(), key="data_folheto", format="DD/MM/YYYY")
 
@@ -157,13 +150,6 @@ with aba2:
             folheto += f" Texto Base: {e['Texto Lido']}\n\n"
         else:
             folheto += f"*PROGRAMAÇÃO:*\nAguardando definição da escala\n"
-
-        louvores_preenchidos = [l for l in st.session_state.louvores if l.strip()!= ""]
-        if louvores_preenchidos:
-            folheto += f"*LOUVORES:*\n"
-            for i, l in enumerate(louvores_preenchidos, 1):
-                folheto += f"{i}. {l}\n"
-            folheto += "\n"
 
         folheto += f"*VERSÍCULO DO DIA:*\n{versiculo}\n\n"
 
