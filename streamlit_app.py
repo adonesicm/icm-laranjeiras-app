@@ -104,7 +104,7 @@ with aba1:
             portao = st.text_input("Irmão do Portão")
         enviado = st.form_submit_button("Salvar Escala")
         if enviado:
-            nova = pd.DataFrame([{'Data do Culto': data, 'Irmão da Palavra': palavra, 'Irmão do Louvor': louvor, 'Texto Lido': texto, 'Irmão do Portão': portao}])
+            nova = pd.DataFrame([{'Data do Culto': pd.to_datetime(data), 'Irmão da Palavra': palavra, 'Irmão do Louvor': louvor, 'Texto Lido': texto, 'Irmão do Portão': portao}])
             st.session_state.escala_df = pd.concat([st.session_state.escala_df, nova], ignore_index=True)
             st.success("Escala salva!")
 
@@ -121,7 +121,7 @@ with aba2:
         st.metric("Total de Pessoas", total)
         enviado_f = st.form_submit_button("Salvar Frequencia")
         if enviado_f:
-            nova_f = pd.DataFrame([{'Data do Culto': data_f, 'Membros (Adultos)': membros, 'Visitantes (Adultos)': visitantes, 'Crianças': criancas, 'Total': total}])
+            nova_f = pd.DataFrame([{'Data do Culto': pd.to_datetime(data_f), 'Membros (Adultos)': membros, 'Visitantes (Adultos)': visitantes, 'Crianças': criancas, 'Total': total}])
             st.session_state.frequencia_df = pd.concat([st.session_state.frequencia_df, nova_f], ignore_index=True)
             st.success("Frequencia salva!")
 
@@ -130,9 +130,11 @@ with aba2:
     data_folheto = st.date_input("Selecione a data do culto", value=date.today(), key="data_folheto", format="DD/MM/YYYY")
 
     if st.button("Gerar Folheto para WhatsApp"):
-        esc_dia = st.session_state.escala_df[st.session_state.escala_df['Data do Culto'] == data_folheto]
-        freq_dia = st.session_state.frequencia_df[st.session_state.frequencia_df['Data do Culto'] == data_folheto] # NOVA LINHA
-        mes_atual = data_folheto.month
+        # CORRECAO: CONVERTER PARA DATATIME E COMPARAR SÓ A DATA
+        data_busca = pd.to_datetime(data_folheto)
+        esc_dia = st.session_state.escala_df[st.session_state.escala_df['Data do Culto'].dt.date == data_busca.date()]
+        freq_dia = st.session_state.frequencia_df[st.session_state.frequencia_df['Data do Culto'].dt.date == data_busca.date()]
+        mes_atual = data_busca.month
         aniv_mes = st.session_state.aniversariantes_df[pd.to_datetime(st.session_state.aniversariantes_df['Data Aniversário']).dt.month == mes_atual]
 
         versiculo = "Aguardando definição"
