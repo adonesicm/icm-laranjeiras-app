@@ -30,7 +30,7 @@ if not check_password():
     st.stop()
 
 # 2. BANCO DE DADOS
-st.title(" ICM Laranjeiras - Escala e Frequência")
+st.title("ICM Laranjeiras - Escala e Frequência")
 if 'escala_df' not in st.session_state:
     st.session_state.escala_df = pd.DataFrame(columns=[
         'Data do Culto', 'Irmão da Palavra', 'Irmão do Louvor', 'Texto Lido', 'Irmão do Portão'
