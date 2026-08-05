@@ -37,7 +37,7 @@ if 'escala_df' not in st.session_state:
     ])
 if 'frequencia_df' not in st.session_state:
     st.session_state.frequencia_df = pd.DataFrame(columns=[
-        'Data do Culto', 'Membros (Adultos)', 'Visitantes (Adultos)', 'Crianças', 'Total', 'Oferta'
+        'Data do Culto', 'Membros (Adultos)', 'Visitantes (Adultos)', 'Crianças', 'Total'
     ])
 if 'aniversariantes_df' not in st.session_state:
     st.session_state.aniversariantes_df = pd.DataFrame(columns=['Nome', 'Data Aniversário'])
@@ -62,65 +62,64 @@ with aba1:
             st.session_state.escala_df = pd.concat([st.session_state.escala_df, nova], ignore_index=True)
             st.success("Escala salva!")
 
-# ABA 2: FREQUENCIA + OFERTA + WHATSAPP
+# ABA 2: FREQUENCIA + FOLHETO WHATSAPP
 with aba2:
     st.header("Lançar Frequência do Culto")
     with st.form("form_frequencia"):
         data_f = st.date_input("Data do Culto", value=date.today(), key="data_f")
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3 = st.columns(3)
         with col1: membros = st.number_input("Membros", min_value=0, step=1)
         with col2: visitantes = st.number_input("Visitantes", min_value=0, step=1)
         with col3: criancas = st.number_input("Crianças", min_value=0, step=1)
-        with col4: oferta = st.number_input("Oferta R$", min_value=0.0, step=1.0, format="%.2f")
         total = membros + visitantes + criancas
         st.metric("Total de Pessoas", total)
         enviado_f = st.form_submit_button("Salvar Frequência")
         if enviado_f:
-            nova_f = pd.DataFrame([{'Data do Culto': data_f, 'Membros (Adultos)': membros, 'Visitantes (Adultos)': visitantes, 'Crianças': criancas, 'Total': total, 'Oferta': oferta}])
+            nova_f = pd.DataFrame([{'Data do Culto': data_f, 'Membros (Adultos)': membros, 'Visitantes (Adultos)': visitantes, 'Crianças': criancas, 'Total': total}])
             st.session_state.frequencia_df = pd.concat([st.session_state.frequencia_df, nova_f], ignore_index=True)
             st.success("Frequência salva!")
 
     st.divider()
-    st.subheader("📤 Compartilhar Relatório do Dia")
-    data_selecionada = st.date_input("Selecione a data para compartilhar", value=date.today(), key="data_share")
+    st.subheader("📜 Gerar e Compartilhar Folheto do Culto")
+    data_folheto = st.date_input("Selecione a data do culto", value=date.today(), key="data_folheto")
 
-    if st.button("Gerar Mensagem para WhatsApp"):
-        esc_dia = st.session_state.escala_df[st.session_state.escala_df['Data do Culto'] == data_selecionada]
-        freq_dia = st.session_state.frequencia_df[st.session_state.frequencia_df['Data do Culto'] == data_selecionada]
-        mes_atual = data_selecionada.month
+    if st.button("Gerar Folheto para WhatsApp"):
+        esc_dia = st.session_state.escala_df[st.session_state.escala_df['Data do Culto'] == data_folheto]
+        freq_dia = st.session_state.frequencia_df[st.session_state.frequencia_df['Data do Culto'] == data_folheto]
+        mes_atual = data_folheto.month
         aniv_mes = st.session_state.aniversariantes_df[pd.to_datetime(st.session_state.aniversariantes_df['Data Aniversário']).dt.month == mes_atual]
 
-        if freq_dia.empty and esc_dia.empty:
-            st.warning("Nenhum dado lançado para esta data.")
+        # GERA O FOLHETO
+        folheto = f"*⛪ FOLHETO ICM LARANJEIRAS*\n"
+        folheto += f"*Culto do dia: {data_folheto.strftime('%d/%m/%Y')}*\n\n"
+
+        if not esc_dia.empty:
+            e = esc_dia.iloc[0]
+            folheto += f"*PROGRAMAÇÃO:*\n"
+            folheto += f"📖 Palavra: {e['Irmão da Palavra']}\n"
+            folheto += f"🎵 Louvor: {e['Irmão do Louvor']}\n"
+            folheto += f"🚪 Portão: {e['Irmão do Portão']}\n"
+            folheto += f"📜 Texto Base: {e['Texto Lido']}\n\n"
         else:
-            mensagem = f"*📊 RELATÓRIO ICM LARANJEIRAS*\n*Data: {data_selecionada.strftime('%d/%m/%Y')}*\n\n"
+            folheto += f"*PROGRAMAÇÃO:*\nAguardando definição da escala\n"
 
-            if not freq_dia.empty:
-                f = freq_dia.iloc[0]
-                mensagem += f"*FREQUÊNCIA:*\n"
-                mensagem += f"👥 Membros: {int(f['Membros (Adultos)'])}\n"
-                mensagem += f"🙌 Visitantes: {int(f['Visitantes (Adultos)'])}\n"
-                mensagem += f"👶 Crianças: {int(f['Crianças'])}\n"
-                mensagem += f"*TOTAL: {int(f['Total'])} pessoas*\n"
-                mensagem += f"💰 Oferta: R$ {f['Oferta']:.2f}\n\n"
+        folheto += f"*VERSÍCULO DO DIA:*\n\"Porque Deus amou o mundo de tal maneira...\" - João 3:16\n"
 
-            if not esc_dia.empty:
-                e = esc_dia.iloc[0]
-                mensagem += f"*ESCALA:*\n"
-                mensagem += f"📖 Palavra: {e['Irmão da Palavra']}\n"
-                mensagem += f"🎵 Louvor: {e['Irmão do Louvor']}\n"
-                mensagem += f"🚪 Portão: {e['Irmão do Portão']}\n"
-                mensagem += f"📜 Texto: {e['Texto Lido']}\n\n"
+        if not aniv_mes.empty:
+            folheto += f"*🎂 ANIVERSARIANTES DE {calendar.month_name[mes_atual].upper()}*\n"
+            for _, row in aniv_mes.iterrows():
+                dia = pd.to_datetime(row['Data Aniversário']).strftime('%d/%m')
+                folheto += f"• {row['Nome']} - {dia}\n"
+            folheto += "\n"
 
-            if not aniv_mes.empty:
-                mensagem += f"*🎂 ANIVERSARIANTES DE {calendar.month_name[mes_atual].upper()}*\n"
-                for _, row in aniv_mes.iterrows():
-                    dia = pd.to_datetime(row['Data Aniversário']).strftime('%d/%m')
-                    mensagem += f"• {row['Nome']} - {dia}\n"
+        folheto += f"*AVISOS:*\n1. Ensaio do Louvor: Sábado 19h\n"
+        folheto += f"2. Reunião de Líderes: Domingo 8h\n"
+        folheto += f"3. Você é muito bem-vindo! 🙌\n\n"
+        folheto += f"_Que Deus te abençoe_"
 
-            url_whatsapp = f"https://wa.me/?text={urllib.parse.quote(mensagem)}"
-            st.link_button("Enviar no WhatsApp", url_whatsapp)
-            st.code(mensagem, language="text")
+        url_whatsapp = f"https://wa.me/?text={urllib.parse.quote(folheto)}"
+        st.link_button("📤 Enviar Folheto no WhatsApp", url_whatsapp)
+        st.code(folheto, language="text")
 
 # ABA 3: ANIVERSARIANTES
 with aba3:
@@ -166,11 +165,11 @@ with aba5:
         total_mes.plot(kind='bar', ax=ax1, color='#FFD700')
         ax1.set_ylabel("Total de Pessoas")
         st.pyplot(fig1)
-        st.subheader("Total de Ofertas por Mês")
-        oferta_mes = df.groupby('Mês')['Oferta'].sum()
-        fig3, ax3 = plt.subplots()
-        oferta_mes.plot(kind='bar', ax=ax3, color='#2E8B57')
-        ax3.set_ylabel("R$")
-        st.pyplot(fig3)
+        st.subheader("% de Visitantes por Culto")
+        df['% Visitantes'] = (df['Visitantes (Adultos)'] / df['Total'].replace(0,1)) * 100
+        fig2, ax2 = plt.subplots()
+        ax2.plot(df['Data do Culto'], df['% Visitantes'], marker='o', color='#000')
+        ax2.set_ylabel("% Visitantes")
+        st.pyplot(fig2)
     else:
         st.warning("Lance algumas frequências primeiro para ver os gráficos.")
