@@ -9,38 +9,38 @@ st.set_page_config(page_title="ICM Laranjeiras - Controle", layout="wide")
 # CSS COM CORES DA ICM - DOURADO E PRETO
 st.markdown("""
 <style>
-   .stApp {
+ .stApp {
         background: linear-gradient(135deg, #FFD700 0%, #FFF8DC 100%);
     }
     h1, h2, h3 {
         color: #000!important;
     }
-   .stTabs [data-baseweb="tab-list"] {
+ .stTabs [data-baseweb="tab-list"] {
         background-color: #000;
         border-radius: 8px;
         padding: 5px;
     }
-   .stTabs [data-baseweb="tab"] {
+ .stTabs [data-baseweb="tab"] {
         color: #FFD700;
         font-weight: bold;
     }
-   .stTabs [aria-selected="true"] {
+ .stTabs [aria-selected="true"] {
         background-color: #FFD700!important;
-        color: #000000!important;
+        color: #000!important;
         border-radius: 5px;
     }
-   .stButton>button {
+ .stButton>button {
         background-color: #000;
         color: #FFD700;
         border: 2px solid #FFD700;
         font-weight: bold;
     }
-   .stButton>button:hover {
+ .stButton>button:hover {
         background-color: #FFD700;
         color: #000;
     }
     [data-testid="stMetricValue"] {
-        color: #000000;
+        color: #000;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -84,9 +84,13 @@ if 'frequencia_df' not in st.session_state:
 if 'aniversariantes_df' not in st.session_state:
     st.session_state.aniversariantes_df = pd.DataFrame(columns=['Nome', 'Data Aniversário'])
 if 'avisos' not in st.session_state:
-    st.session_state.avisos = "1. Ensaio do Louvor: Sábado 19h\n2. Reunião de Líderes: Domingo 8h\n3. Você é muito bem-vindo! 🙌"
+    st.session_state.avisos = ""
+if 'dons' not in st.session_state:
+    st.session_state.dons = ""
+if 'louvores' not in st.session_state:
+    st.session_state.louvores = ["", "", ""]
 
-aba1, aba2, aba3, aba4, aba5 = st.tabs(["📅 Escala", "📊 Frequência", "📢 Avisos", "🎂 Aniversários", "📜 Histórico"])
+aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs(["📅 Escala", "📊 Frequência", "📢 Avisos", "🎁 Dons", "🎂 Aniversários", "📜 Histórico"])
 
 # ABA 1: ESCALA
 with aba1:
@@ -124,6 +128,11 @@ with aba2:
             st.success("Frequência salva!")
 
     st.divider()
+    st.subheader("🎵 Louvores do Culto")
+    for i in range(6):
+        st.session_state.louvores[i] = st.text_input(f"Louvor {i+1}", value=st.session_state.louvores[i], key=f"louvor_{i}")
+
+    st.divider()
     st.subheader("📜 Gerar e Compartilhar Folheto do Culto")
     data_folheto = st.date_input("Selecione a data do culto", value=date.today(), key="data_folheto", format="DD/MM/YYYY")
 
@@ -142,14 +151,24 @@ with aba2:
         if not esc_dia.empty:
             e = esc_dia.iloc[0]
             folheto += f"*PROGRAMAÇÃO:*\n"
-            folheto += f" Palavra: {e['Irmão da Palavra']}\n"
-            folheto += f" Louvor: {e['Irmão do Louvor']}\n"
-            folheto += f" Portão: {e['Irmão do Portão']}\n"
-            folheto += f" Texto Base: {e['Texto Lido']}\n\n"
+            folheto += f"📖 Palavra: {e['Irmão da Palavra']}\n"
+            folheto += f"🎵 Louvor: {e['Irmão do Louvor']}\n"
+            folheto += f"🚪 Portão: {e['Irmão do Portão']}\n"
+            folheto += f"📜 Texto Base: {e['Texto Lido']}\n\n"
         else:
             folheto += f"*PROGRAMAÇÃO:*\nAguardando definição da escala\n"
 
+        louvores_preenchidos = [l for l in st.session_state.louvores if l.strip()!= ""]
+        if louvores_preenchidos:
+            folheto += f"*LOUVORES:*\n"
+            for i, l in enumerate(louvores_preenchidos, 1):
+                folheto += f"{i}. {l}\n"
+            folheto += "\n"
+
         folheto += f"*VERSÍCULO DO DIA:*\n{versiculo}\n\n"
+
+        if st.session_state.dons.strip()!= "":
+            folheto += f"*DONS ESPIRITUAIS:*\n{st.session_state.dons}\n\n"
 
         if not aniv_mes.empty:
             folheto += f"*🎂 ANIVERSARIANTES DE {calendar.month_name[mes_atual].upper()}*\n"
@@ -158,7 +177,9 @@ with aba2:
                 folheto += f"• {row['Nome']} - {dia}\n"
             folheto += "\n"
 
-        folheto += f"*AVISOS E REUNIÕES:*\n{st.session_state.avisos}\n\n"
+        if st.session_state.avisos.strip()!= "":
+            folheto += f"*AVISOS E REUNIÕES:*\n{st.session_state.avisos}\n\n"
+
         folheto += f"_Que Deus te abençoe_"
 
         url_whatsapp = f"https://wa.me/?text={urllib.parse.quote(folheto)}"
@@ -168,11 +189,17 @@ with aba2:
 # ABA 3: AVISOS
 with aba3:
     st.header("Editar Avisos e Reuniões")
-    st.text_area("Digite os avisos que vão no folheto", key="avisos", height=200)
-    st.success("Os avisos foram salvos automaticamente!")
+    st.text_area("Digite os avisos que vão no folheto", key="avisos", height=200, placeholder="Digite os avisos aqui...")
+    st.info("Deixe em branco se não tiver avisos para este culto")
 
-# ABA 4: ANIVERSARIANTES
+# ABA 4: DONS ESPIRITUAIS
 with aba4:
+    st.header("Dons Espirituais")
+    st.text_area("Digite os dons espirituais do culto", key="dons", height=200, placeholder="Ex: Profecia, Palavra de Sabedoria, Cura...")
+    st.info("Deixe em branco se não houver manifestação de dons")
+
+# ABA 5: ANIVERSARIANTES
+with aba5:
     st.header("Cadastrar Aniversariantes")
     with st.form("form_aniv"):
         nome = st.text_input("Nome")
@@ -187,8 +214,8 @@ with aba4:
         df_aniv['Data Aniversário'] = pd.to_datetime(df_aniv['Data Aniversário']).dt.strftime('%d/%m/%Y')
         st.dataframe(df_aniv, use_container_width=True)
 
-# ABA 5: HISTORICO
-with aba5:
+# ABA 6: HISTORICO
+with aba6:
     st.header("Histórico")
     if not st.session_state.frequencia_df.empty:
         st.session_state.frequencia_df['Data do Culto'] = pd.to_datetime(st.session_state.frequencia_df['Data do Culto'])
