@@ -3,10 +3,6 @@ import pandas as pd
 from datetime import date
 import urllib.parse
 import calendar
-from io import BytesIO
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
 
 st.set_page_config(page_title="ICM Laranjeiras - Controle", layout="wide")
 
@@ -25,21 +21,6 @@ h1, h2, h3 { color: #000!important; }
 
 def formata_data(dt):
     return pd.to_datetime(dt).strftime('%d/%m/%Y')
-
-def gerar_pdf(folheto_texto):
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    y = height - 2*cm
-    for linha in folheto_texto.split('\n'):
-        c.drawString(2*cm, y, linha.replace('*',''))
-        y -= 0.7*cm
-        if y < 2*cm:
-            c.showPage()
-            y = height - 2*cm
-    c.save()
-    buffer.seek(0)
-    return buffer
 
 def check_password():
     def password_entered():
@@ -121,11 +102,6 @@ with aba2:
         mes_atual = data_busca.month
         aniv_mes = st.session_state.aniversariantes_df[pd.to_datetime(st.session_state.aniversariantes_df['Data Aniversário']).dt.month == mes_atual]
 
-        # CALCULAR TOTAL DO MES
-        total_mes = 0
-        if not df_freq_temp.empty:
-            total_mes = df_freq_temp[df_freq_temp['Data do Culto'].apply(lambda x: pd.to_datetime(x).month == mes_atual)]['Total'].sum()
-
         versiculo = "Aguardando definição"
         if not esc_dia.empty: versiculo = esc_dia.iloc[0]['Texto Lido']
 
@@ -143,8 +119,6 @@ with aba2:
         else:
             folheto += f"*ESTATISTICA DO CULTO:*\nAguardando lançamento da frequencia\n"
 
-        folheto += f"*TOTAL DO MES: {int(total_mes)}*\n\n"
-
         folheto += f"*VERSICULO DO DIA:*\n{versiculo}\n\n"
 
         if st.session_state.dons.strip()!= "": folheto += f"*DONS ESPIRITUAIS:*\n{st.session_state.dons}\n\n"
@@ -157,14 +131,8 @@ with aba2:
         if st.session_state.avisos.strip()!= "": folheto += f"*AVISOS E REUNIOES:*\n{st.session_state.avisos}\n\n"
         folheto += f"“E haverá um tabernáculo para sombra contra o calor do dia; e para refúgio e esconderijo contra a tempestade e a chuva”"
 
-        col1, col2 = st.columns(2)
-        with col1:
-            url_whatsapp = f"https://wa.me/?text={urllib.parse.quote(folheto)}"
-            st.link_button("Enviar Folheto no WhatsApp", url_whatsapp)
-        with col2:
-            pdf = gerar_pdf(folheto)
-            st.download_button("Baixar PDF", data=pdf, file_name=f"Folheto_ICM_{formata_data(data_folheto)}.pdf", mime="application/pdf")
-
+        url_whatsapp = f"https://wa.me/?text={urllib.parse.quote(folheto)}"
+        st.link_button("Enviar Folheto no WhatsApp", url_whatsapp)
         st.code(folheto, language="text")
 
 with aba3:
