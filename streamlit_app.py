@@ -129,3 +129,157 @@ with aba4:
         st.pyplot(fig2)
     else:
         st.warning("Lance algumas frequências primeiro para ver os gráficos.")
+        import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+from datetime import date
+import urllib.parse
+
+st.set_page_config(page_title="ICM Laranjeiras - Controle", layout="wide")
+
+# 1. LOGIN COM SENHA
+def check_password():
+    def password_entered():
+        if st.session_state["password"] == "icm2026":
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["password_correct"] = False
+    if "password_correct" not in st.session_state:
+        st.text_input("Digite a senha", type="password", on_change=password_entered, key="password")
+        st.info("Senha padrão: `icm2026`")
+        return False
+    elif not st.session_state["password_correct"]:
+        st.text_input("Digite a senha", type="password", on_change=password_entered, key="password")
+        st.error("😕 Senha incorreta")
+        return False
+    else:
+        return True
+
+if not check_password():
+    st.stop()
+
+# 2. BANCO DE DADOS
+st.title("⛪ ICM Laranjeiras - Escala e Frequência")
+if 'escala_df' not in st.session_state:
+    st.session_state.escala_df = pd.DataFrame(columns=[
+        'Data do Culto', 'Irmão da Palavra', 'Irmão do Louvor', 'Texto Lido', 'Irmão do Portão'
+    ])
+if 'frequencia_df' not in st.session_state:
+    st.session_state.frequencia_df = pd.DataFrame(columns=[
+        'Data do Culto', 'Membros (Adultos)', 'Visitantes (Adultos)', 'Crianças', 'Total'
+    ])
+
+aba1, aba2, aba3, aba4 = st.tabs(["📅 Escala do Dia", "📊 Frequência", "📜 Histórico", "📈 Gráficos"])
+
+# ABA 1: ESCALA
+with aba1:
+    st.header("Cadastrar Escala do Culto")
+    with st.form("form_escala"):
+        data = st.date_input("Data do Culto", value=date.today())
+        col1, col2 = st.columns(2)
+        with col1:
+            palavra = st.text_input("Irmão da Palavra")
+            texto = st.text_input("Texto Lido", placeholder="Ex: João 3:16")
+        with col2:
+            louvor = st.text_input("Irmão do Louvor")
+            portao = st.text_input("Irmão do Portão")
+        enviado = st.form_submit_button("Salvar Escala")
+        if enviado:
+            nova = pd.DataFrame([{'Data do Culto': data, 'Irmão da Palavra': palavra, 'Irmão do Louvor': louvor, 'Texto Lido': texto, 'Irmão do Portão': portao}])
+            st.session_state.escala_df = pd.concat([st.session_state.escala_df, nova], ignore_index=True)
+            st.success("Escala salva!")
+
+# ABA 2: FREQUENCIA + BOTÃO WHATSAPP
+with aba2:
+    st.header("Lançar Frequência do Culto")
+    with st.form("form_frequencia"):
+        data_f = st.date_input("Data do Culto", value=date.today(), key="data_f")
+        col1, col2, col3 = st.columns(3)
+        with col1: membros = st.number_input("Membros (Adultos)", min_value=0, step=1)
+        with col2: visitantes = st.number_input("Visitantes (Adultos)", min_value=0, step=1)
+        with col3: criancas = st.number_input("Crianças", min_value=0, step=1)
+        total = membros + visitantes + criancas
+        st.metric("Total de Pessoas", total)
+        enviado_f = st.form_submit_button("Salvar Frequência")
+        if enviado_f:
+            nova_f = pd.DataFrame([{'Data do Culto': data_f, 'Membros (Adultos)': membros, 'Visitantes (Adultos)': visitantes, 'Crianças': criancas, 'Total': total}])
+            st.session_state.frequencia_df = pd.concat([st.session_state.frequencia_df, nova_f], ignore_index=True)
+            st.success("Frequência salva!")
+
+    # NOVO: GERAR E COMPARTILHAR NO WHATSAPP
+    st.divider()
+    st.subheader("📤 Compartilhar Relatório do Dia")
+
+    data_selecionada = st.date_input("Selecione a data para compartilhar", value=date.today(), key="data_share")
+
+    if st.button("Gerar Mensagem para WhatsApp"):
+        # Pega dados da data
+        esc_dia = st.session_state.escala_df[st.session_state.escala_df['Data do Culto'] == data_selecionada]
+        freq_dia = st.session_state.frequencia_df[st.session_state.frequencia_df['Data do Culto'] == data_selecionada]
+
+        if freq_dia.empty and esc_dia.empty:
+            st.warning("Nenhum dado lançado para esta data.")
+        else:
+            mensagem = f"*📊 RELATÓRIO ICM LARANJEIRAS*\n*Data: {data_selecionada.strftime('%d/%m/%Y')}*\n\n"
+
+            if not freq_dia.empty:
+                f = freq_dia.iloc[0]
+                mensagem += f"*FREQUÊNCIA:*\n"
+                mensagem += f"👥 Membros: {int(f['Membros (Adultos)'])}\n"
+                mensagem += f"🙌 Visitantes: {int(f['Visitantes (Adultos)'])}\n"
+                mensagem += f"👶 Crianças: {int(f['Crianças'])}\n"
+                mensagem += f"*TOTAL: {int(f['Total'])} pessoas*\n\n"
+
+            if not esc_dia.empty:
+                e = esc_dia.iloc[0]
+                mensagem += f"*ESCALA:*\n"
+                mensagem += f"📖 Palavra: {e['Irmão da Palavra']}\n"
+                mensagem += f"🎵 Louvor: {e['Irmão do Louvor']}\n"
+                mensagem += f"🚪 Portão: {e['Irmão do Portão']}\n"
+                mensagem += f"📜 Texto: {e['Texto Lido']}\n"
+
+            # Cria link do WhatsApp
+            url_whatsapp = f"https://wa.me/?text={urllib.parse.quote(mensagem)}"
+            st.link_button("Enviar no WhatsApp", url_whatsapp)
+            st.code(mensagem, language="text")
+
+# ABA 3: HISTORICO
+with aba3:
+    st.header("Histórico")
+    if not st.session_state.frequencia_df.empty:
+        st.session_state.frequencia_df['Data do Culto'] = pd.to_datetime(st.session_state.frequencia_df['Data do Culto'])
+        data_min = st.session_state.frequencia_df['Data do Culto'].min().date()
+        data_max = st.session_state.frequencia_df['Data do Culto'].max().date()
+        data_range = st.date_input("Filtrar por período", value=(data_min, data_max), min_value=data_min, max_value=data_max)
+        df_filtrado = st.session_state.frequencia_df[
+            (st.session_state.frequencia_df['Data do Culto'].dt.date >= data_range[0]) &
+            (st.session_state.frequencia_df['Data do Culto'].dt.date <= data_range[1])
+        ]
+        st.dataframe(df_filtrado, use_container_width=True)
+    else:
+        st.info("Nenhuma frequência lançada ainda.")
+    st.subheader("Escalas Cadastradas")
+    st.dataframe(st.session_state.escala_df, use_container_width=True)
+
+# ABA 4: GRAFICOS
+with aba4:
+    st.header("📈 Gráficos de Crescimento")
+    if not st.session_state.frequencia_df.empty:
+        df = st.session_state.frequencia_df.copy()
+        df['Data do Culto'] = pd.to_datetime(df['Data do Culto'])
+        df['Mês'] = df['Data do Culto'].dt.to_period('M').astype(str)
+        st.subheader("Total de Pessoas por Mês")
+        total_mes = df.groupby('Mês')['Total'].sum()
+        fig1, ax1 = plt.subplots()
+        total_mes.plot(kind='bar', ax=ax1, color='#FFD700')
+        ax1.set_ylabel("Total de Pessoas")
+        st.pyplot(fig1)
+        st.subheader("% de Visitantes por Culto")
+        df['% Visitantes'] = (df['Visitantes (Adultos)'] / df['Total'].replace(0,1)) * 100
+        fig2, ax2 = plt.subplots()
+        ax2.plot(df['Data do Culto'], df['% Visitantes'], marker='o', color='#000')
+        ax2.set_ylabel("% Visitantes")
+        st.pyplot(fig2)
+    else:
+        st.warning("Lance algumas frequências primeiro para ver os gráficos.")
