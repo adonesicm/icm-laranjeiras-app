@@ -3,6 +3,10 @@ import pandas as pd
 from datetime import date
 import urllib.parse
 import calendar
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
 
 st.set_page_config(page_title="ICM Laranjeiras - Controle", layout="wide")
 
@@ -21,6 +25,21 @@ h1, h2, h3 { color: #000!important; }
 
 def formata_data(dt):
     return pd.to_datetime(dt).strftime('%d/%m/%Y')
+
+def gerar_pdf(folheto_texto):
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    y = height - 2*cm
+    for linha in folheto_texto.split('\n'):
+        c.drawString(2*cm, y, linha.replace('*',''))
+        y -= 0.7*cm
+        if y < 2*cm:
+            c.showPage()
+            y = height - 2*cm
+    c.save()
+    buffer.seek(0)
+    return buffer
 
 def check_password():
     def password_entered():
@@ -92,8 +111,6 @@ with aba2:
 
     if st.button("Gerar Folheto para WhatsApp"):
         data_busca = pd.to_datetime(data_folheto).date()
-
-        # FORCA CONVERSAO ANTES DE BUSCAR
         df_esc_temp = st.session_state.escala_df.copy()
         df_freq_temp = st.session_state.frequencia_df.copy()
         if not df_esc_temp.empty: df_esc_temp['Data do Culto'] = pd.to_datetime(df_esc_temp['Data do Culto']).dt.date
@@ -103,6 +120,11 @@ with aba2:
         freq_dia = df_freq_temp[df_freq_temp['Data do Culto'] == data_busca]
         mes_atual = data_busca.month
         aniv_mes = st.session_state.aniversariantes_df[pd.to_datetime(st.session_state.aniversariantes_df['Data Aniversário']).dt.month == mes_atual]
+
+        # CALCULAR TOTAL DO MES
+        total_mes = 0
+        if not df_freq_temp.empty:
+            total_mes = df_freq_temp[df_freq_temp['Data do Culto'].apply(lambda x: pd.to_datetime(x).month == mes_atual)]['Total'].sum()
 
         versiculo = "Aguardando definição"
         if not esc_dia.empty: versiculo = esc_dia.iloc[0]['Texto Lido']
@@ -117,9 +139,11 @@ with aba2:
 
         if not freq_dia.empty:
             f = freq_dia.iloc[0]
-            folheto += f"*ESTATISTICA:*\nMembros: {int(f['Membros (Adultos)'])}\nVisitantes: {int(f['Visitantes (Adultos)'])}\nCrianças: {int(f['Crianças'])}\nTotal: {int(f['Total'])}\n\n"
+            folheto += f"*ESTATISTICA DO CULTO:*\nMembros: {int(f['Membros (Adultos)'])}\nVisitantes: {int(f['Visitantes (Adultos)'])}\nCrianças: {int(f['Crianças'])}\nTotal: {int(f['Total'])}\n\n"
         else:
-            folheto += f"*ESTATISTICA:*\nAguardando lançamento da frequencia\n"
+            folheto += f"*ESTATISTICA DO CULTO:*\nAguardando lançamento da frequencia\n"
+
+        folheto += f"*TOTAL DO MES: {int(total_mes)}*\n\n"
 
         folheto += f"*VERSICULO DO DIA:*\n{versiculo}\n\n"
 
@@ -133,19 +157,23 @@ with aba2:
         if st.session_state.avisos.strip()!= "": folheto += f"*AVISOS E REUNIOES:*\n{st.session_state.avisos}\n\n"
         folheto += f"“E haverá um tabernáculo para sombra contra o calor do dia; e para refúgio e esconderijo contra a tempestade e a chuva”"
 
-        url_whatsapp = f"https://wa.me/?text={urllib.parse.quote(folheto)}"
-        st.link_button("Enviar Folheto no WhatsApp", url_whatsapp)
+        col1, col2 = st.columns(2)
+        with col1:
+            url_whatsapp = f"https://wa.me/?text={urllib.parse.quote(folheto)}"
+            st.link_button("Enviar Folheto no WhatsApp", url_whatsapp)
+        with col2:
+            pdf = gerar_pdf(folheto)
+            st.download_button("Baixar PDF", data=pdf, file_name=f"Folheto_ICM_{formata_data(data_folheto)}.pdf", mime="application/pdf")
+
         st.code(folheto, language="text")
 
 with aba3:
     st.header("Editar Avisos e Reuniões")
     st.text_area("Digite os avisos que vão no folheto", key="avisos", height=200)
-    st.info("Deixe em branco se não tiver avisos")
 
 with aba4:
     st.header("Dons Espirituais")
     st.text_area("Digite os dons espirituais do culto", key="dons", height=200)
-    st.info("Deixe em branco se não houver manifestação de dons")
 
 with aba5:
     st.header("Cadastrar Aniversariantes")
@@ -172,10 +200,6 @@ with aba6:
         df_filtrado = df_temp[(df_temp['Data do Culto'].dt.date >= data_range[0]) & (df_temp['Data do Culto'].dt.date <= data_range[1])]
         df_filtrado['Data do Culto'] = df_filtrado['Data do Culto'].dt.strftime('%d/%m/%Y')
         st.dataframe(df_filtrado, use_container_width=True)
+        st.metric("Total Geral no Período", int(df_filtrado['Total'].sum()))
     else:
         st.info("Nenhuma frequencia lançada ainda.")
-    st.subheader("Escalas Cadastradas")
-    if not st.session_state.escala_df.empty:
-        df_escala = st.session_state.escala_df.copy()
-        df_escala['Data do Culto'] = pd.to_datetime(df_escala['Data do Culto']).dt.strftime('%d/%m/%Y')
-        st.dataframe(df_escala, use_container_width=True)
