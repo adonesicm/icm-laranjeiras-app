@@ -1,11 +1,49 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from datetime import date
 import urllib.parse
 import calendar
 
 st.set_page_config(page_title="ICM Laranjeiras - Controle", layout="wide")
+
+# CSS COM CORES DA ICM - DOURADO E PRETO
+st.markdown("""
+<style>
+   .stApp {
+        background: linear-gradient(135deg, #FFD700 0%, #FFF8DC 100%);
+    }
+    h1, h2, h3 {
+        color: #000!important;
+    }
+   .stTabs [data-baseweb="tab-list"] {
+        background-color: #000;
+        border-radius: 8px;
+        padding: 5px;
+    }
+   .stTabs [data-baseweb="tab"] {
+        color: #FFD700;
+        font-weight: bold;
+    }
+   .stTabs [aria-selected="true"] {
+        background-color: #FFD700!important;
+        color: #000000!important;
+        border-radius: 5px;
+    }
+   .stButton>button {
+        background-color: #000;
+        color: #FFD700;
+        border: 2px solid #FFD700;
+        font-weight: bold;
+    }
+   .stButton>button:hover {
+        background-color: #FFD700;
+        color: #000;
+    }
+    [data-testid="stMetricValue"] {
+        color: #000000;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # FORMATA DATA PARA DD/MM/AAAA
 def formata_data(dt):
@@ -48,7 +86,7 @@ if 'aniversariantes_df' not in st.session_state:
 if 'avisos' not in st.session_state:
     st.session_state.avisos = "1. Ensaio do Louvor: Sábado 19h\n2. Reunião de Líderes: Domingo 8h\n3. Você é muito bem-vindo! 🙌"
 
-aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs(["📅 Escala", "📊 Frequência", "📢 Avisos", "🎂 Aniversários", "📜 Histórico", "📈 Gráficos"])
+aba1, aba2, aba3, aba4, aba5 = st.tabs(["📅 Escala", "📊 Frequência", "📢 Avisos", "🎂 Aniversários", "📜 Histórico"])
 
 # ABA 1: ESCALA
 with aba1:
@@ -170,25 +208,3 @@ with aba5:
         df_escala = st.session_state.escala_df.copy()
         df_escala['Data do Culto'] = pd.to_datetime(df_escala['Data do Culto']).dt.strftime('%d/%m/%Y')
         st.dataframe(df_escala, use_container_width=True)
-
-# ABA 6: GRAFICOS
-with aba6:
-    st.header("📈 Gráficos de Crescimento")
-    if not st.session_state.frequencia_df.empty:
-        df = st.session_state.frequencia_df.copy()
-        df['Data do Culto'] = pd.to_datetime(df['Data do Culto'])
-        df['Mês'] = df['Data do Culto'].dt.to_period('M').astype(str)
-        st.subheader("Total de Pessoas por Mês")
-        total_mes = df.groupby('Mês')['Total'].sum()
-        fig1, ax1 = plt.subplots()
-        total_mes.plot(kind='bar', ax=ax1, color='#FFD700')
-        ax1.set_ylabel("Total de Pessoas")
-        st.pyplot(fig1)
-        st.subheader("% de Visitantes por Culto")
-        df['% Visitantes'] = (df['Visitantes (Adultos)'] / df['Total'].replace(0,1)) * 100
-        fig2, ax2 = plt.subplots()
-        ax2.plot(df['Data do Culto'], df['% Visitantes'], marker='o', color='#000')
-        ax2.set_ylabel("% Visitantes")
-        st.pyplot(fig2)
-    else:
-        st.warning("Lance algumas frequências primeiro para ver os gráficos.")
